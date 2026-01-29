@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Love Book For You My Love</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Elegant Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Cormorant+Garamond:wght@400;500&family=Lora:wght@400;500;600&family=Merriweather:wght@300;400;700&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      background:
+        linear-gradient(135deg, #fdf6ec 0%, #fffaf3 60%, #f5e8df 100%),
+        url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'><g fill='%23e3b7c7' opacity='0.22'><path d='M100 40c-12-20-40-20-52 0-12 19-2 43 14 56l38 34 38-34c16-13 26-37 14-56-12-20-40-20-52 0z'/></g></svg>");
+      background-repeat: no-repeat, repeat;
+      background-size: auto, 200px 200px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: 'Cormorant Garamond', serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    .book {
+      width: min(92vw, 420px);
+      height: min(86vh, 640px);
+      background: #fffaf3;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+      border-radius: 12px;
+      padding: 16px;
+      position: relative;
+      overflow: hidden;
+      perspective: 1600px;
+      border: 1px solid #eaded2;
+      z-index: 1;
+    }
+
+    .page {
+      position: absolute;
+      inset: 0;
+      padding: 0;
+      background: #fffaf3;
+      border-radius: 10px;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.10);
+      transform-origin: left center;
+      transform-style: preserve-3d;
+      backface-visibility: hidden;
+      transition: transform 0.9s cubic-bezier(.2,.6,.2,1);
+      overflow: hidden;
+    }
+    .page-inner {
+      position: absolute;
+      inset: 0;
+      padding: 18px 18px 60px;
+      overflow: auto;
+      -webkit-overflow-scrolling: touch;
+      touch-action: pan-y;
+      overscroll-behavior-y: contain;
+      border-radius: 10px;
+    }
+    /* Realistic flip shading */
+    .page::before {
+      content: '';
+      position: absolute; inset: 0; pointer-events: none; border-radius: 10px;
+      background: linear-gradient(90deg, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.06) 30%, rgba(0,0,0,0.02) 60%, rgba(0,0,0,0.12) 100%);
+      opacity: 0;
+    }
+    .page::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(90deg, rgba(0,0,0,0.08), transparent 30%, transparent 70%, rgba(0,0,0,0.06));
+      opacity: 0;
+      transition: opacity .9s ease;
+      border-radius: 10px;
+    }
+    .page.flipped {
+      transform: rotateY(-180deg);
+    }
+    .page.flipped::after { opacity: 1; }
+    .page.turning::before { opacity: 1; transition: opacity .9s ease; }
+
+    h1, h2 {
+      text-align: center;
+      color: #8b5e83;
+      font-family: 'Playfair Display', serif;
+      letter-spacing: 0.5px;
+    }
+
+    h1 {
+      font-size: 28px;
+      margin-top: 20px;
+    }
+
+    h2 {
+      font-size: 22px;
+      margin-top: 10px;
+    }
+
+    p {
+      font-size: 18px;
+      line-height: 1.8;
+      color: #5a4a42;
+      text-align: center;
+      margin-top: 16px;
+      white-space: pre-line;
+      word-wrap: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    /* Font rules per page */
+    .page-1 p { font-family: 'Lora', serif; font-size: 19px; }
+    .page-2 p { font-family: 'Merriweather', serif; font-size: 18px; }
+    .page-3 p { font-family: 'Cormorant Garamond', serif; }
+
+    .photo {
+      width: 100%;
+      height: 250px;
+      object-fit: cover;
+      border-radius: 8px;
+      margin-top: 15px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    }
+    .photo[style*="display: none"] + p { margin-top: 8px; }
+
+    /* Invisible tap zones for navigation (edges only) */
+    .tap-zones { position: absolute; inset: 0; display: grid; grid-template-columns: 22% 56% 22%; z-index: 6; pointer-events: none; }
+    .tap-zones .left { cursor: w-resize; pointer-events: auto; }
+    .tap-zones .right { cursor: e-resize; pointer-events: auto; }
+    .tap-zones .middle { pointer-events: none; }
+
+    /* Music button */
+    .music-btn {
+      position: absolute;
+      top: 10px; left: 10px;
+      z-index: 6;
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      border: 1px solid #d7c8bf;
+      background: linear-gradient(180deg, #fffaf3, #f3e7df);
+      color: #8b5e83;
+      font-size: 18px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.12);
+    }
+    .music-btn.playing { color: #6f4763; box-shadow: 0 10px 20px rgba(139,94,131,0.25); }
+
+    /* Start cover */
+    .page-cover {
+      display: grid; place-items: center; text-align: center;
+      background: radial-gradient(120px circle at 25% 20%, rgba(139,94,131,0.08), transparent 50%), #fffaf3;
+    }
+    .page-cover .page-inner { display: grid; place-items: center; }
+    .cover-content h1 { font-size: 26px; margin: 8px 0; }
+    .cover-content p { font-family: 'Merriweather', serif; font-size: 14px; color: #6e5a52; margin-top: 8px; }
+    .start-btn {
+      margin: 12px auto 0;
+      width: 74px; height: 74px; border-radius: 50%;
+      border: 1px solid #d7c8bf;
+      background: radial-gradient(circle at 50% 45%, #ffd9e6 0%, #f3e7df 60%);
+      color: #8b5e83;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.12);
+    }
+    .start-btn:active { transform: translateY(1px); }
+    .start-btn .heart-icon { font-size: 32px; color: #c25b83; animation: beat 2.6s ease-in-out infinite; }
+    @keyframes beat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+
+    /* Page indicator */
+    .page-indicator {
+      position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+      font-family: 'Merriweather', serif; font-size: 12px; color: #7a6770;
+      background: rgba(255,250,243,0.85); padding: 4px 10px; border-radius: 16px;
+      border: 1px solid #eaded2; z-index: 6;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.08);
+    }
+
+    /* Optional full-screen background image layer */
+    .bg-img {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: 0;
+      opacity: 0.28;
+    }
+
+    /* Decorative stickers */
+    .decorations { position: absolute; inset: 0; pointer-events: none; }
+    .sticker { position: absolute; width: 64px; height: 64px; filter: drop-shadow(0 6px 12px rgba(0,0,0,0.18)); }
+    .sticker.heart {
+      left: -8px; bottom: 70px;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'><path fill='%23c68aa2' d='M32 14c-4-7-14-7-18 0-4 6-1 15 5 20l13 11 13-11c6-5 9-14 5-20-4-7-14-7-18 0z'/></svg>");
+      background-size: cover;
+    }
+    .sticker.bow {
+      right: 10px; top: 70px;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'><path fill='%23b67b93' d='M12 20c8-2 14 6 20 12 6-6 12-14 20-12l-8 12 8 12c-8 2-14-6-20-12-6 6-12 14-20 12l8-12-8-12z'/><circle cx='32' cy='32' r='6' fill='%238b5e83'/></svg>");
+      background-size: cover;
+    }
+    .sticker.doll {
+      left: 22px; top: 90px;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'><circle cx='32' cy='20' r='10' fill='%23a6798d'/><rect x='18' y='28' width='28' height='22' rx='10' fill='%23caa2b6'/><circle cx='22' cy='44' r='6' fill='%23b88fab'/><circle cx='42' cy='44' r='6' fill='%23b88fab'/></svg>");
+      background-size: cover;
+      transform: rotate(-6deg);
+    }
+
+    /* Collage layout */
+    .collage { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 8px; }
+    @media (min-width: 420px) { .collage { grid-template-columns: repeat(3, 1fr); gap: 12px; } }
+    .collage img {
+      width: 100%; height: 120px; object-fit: cover; border-radius: 10px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.12); border: 1px solid #eaded2;
+      background: #fffaf3;
+    }
+    .collage img:nth-child(3n) { height: 160px; transform: rotate(-1.5deg); }
+    .collage img:nth-child(5n) { height: 140px; transform: rotate(1.2deg); }
+    .collage img:nth-child(7n) { height: 180px; }
+
+    @keyframes fade {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+<img src="image/bg1.jpg" alt="Background" class="bg-img" onerror="this.remove()">
+
+<div class="book">
+  <div class="decorations" aria-hidden="true">
+    <span class="sticker heart"></span>
+    <span class="sticker bow"></span>
+    <span class="sticker doll"></span>
+  </div>
+  <!-- COVER / START -->
+  <div class="page page-cover">
+    <div class="page-inner">
+    <div class="cover-content">
+      <h1>Love Book</h1>
+      <p>Sebelum perjalanan dimulai bisa diklik tombol musiknya ya sayang 😊</p>
+      <button class="start-btn" type="button" aria-label="Mulai">
+        <span class="heart-icon" aria-hidden="true">♥</span>
+      </button>
+    </div>
+    </div>
+  </div>
+
+  <!-- HALAMAN 1 : PUISI -->
+  <div class="page page-1">
+    <div class="page-inner">
+    <h1>Untuk Kamu</h1>
+    <p>
+Aku harapkan selalu bersamamamu  
+Sampai nanti dan kapanpun bersamamamu  
+Aku tak ingin kehilangan, karena  
+rasanya sakit bisa kehilangan  
+
+Tak ada yang bisa menghalangi  
+Ingin ku tak ada yang menghalangi  
+Biar ragu separuh nyawa  
+Taruhanku hanya bersamamu  
+
+Ku harapkan hangat bersamamu  
+Selama terasa senang di sampingmu  
+Salah satunya jalan hanya bersama  
+Di lubuk jiwa tertanam namamu  
+
+Sampai mati...
+  </p>
+  </div>
+  </div>
+
+  <!-- HALAMAN 2 -->
+  <div class="page page-2">
+    <div class="page-inner">
+    <h2>Your Special Day</h2>
+    <img src="image/aiq kecil.jpeg" alt="Masa kecil kamu" class="photo" onerror="this.style.display='none'">
+    <p>
+Selamat bertambah usia yang ke 22 Faiq Ramzy Nabgighah .
+
+Ada banyak hal di dunia ini
+yang berjalan tanpa rencana,
+salah satunya adalah kita bertemu dan bersama
+
+Terima kasih telah tumbuh
+menjadi seseorang
+yang membuat hidupku
+terasa lebih utuh.
+jangan mudah marah dan semangat dalam menempuh masa depan
+aku selalu mendukungmu i love you bby aku sayang kamu sama aku terus ya❤️💕.
+  </p>
+  </div>
+  </div>
+
+  <!-- HALAMAN 3 -->
+  <div class="page page-3">
+    <div class="page-inner">
+    <div class="collage" aria-label="Kolase kebersamaan">
+      <img src="image/bersama1.jpeg" alt="Kebersamaan 1" onerror="this.style.display='none'">
+      <img src="image/bersama2.jpeg" alt="Kebersamaan 2" onerror="this.style.display='none'">
+      <img src="image/bersama3.jpeg" alt="Kebersamaan 3" onerror="this.style.display='none'">
+      <img src="image/bersama4.jpeg" alt="Kebersamaan 4" onerror="this.style.display='none'">
+      <img src="image/bersama5.jpeg" alt="Kebersamaan 5" onerror="this.style.display='none'">
+      <img src="image/bersama6 (1).png" alt="Kebersamaan 6" onerror="this.style.display='none'">
+      <img src="image/bersama6 (2).png" alt="Kebersamaan 7" onerror="this.style.display='none'">
+      <img src="image/bersama7.png" alt="Kebersamaan 7" onerror="this.style.display='none'">
+      <img src="image/bersama8.jpg" alt="Kebersamaan 8" onerror="this.style.display='none'">
+      <img src="image/bersama9.jpg" alt="Kebersamaan 9" onerror="this.style.display='none'">
+    </div>
+    </div>
+  </div>
+
+  <div class="tap-zones" aria-hidden="true">
+    <div class="left"></div>
+    <div class="middle"></div>
+    <div class="right"></div>
+  </div>
+  <button class="music-btn" type="button" aria-label="Musik">♫</button>
+  <audio id="bgm" playsinline loop preload="auto" src="assets/bgm.mp3"></audio>
+  <div class="page-indicator" aria-live="polite">Cover</div>
+
+</div>
+
+<script>
+  const book = document.querySelector('.book');
+  const pages = Array.from(document.querySelectorAll('.book .page'));
+  const leftZone = document.querySelector('.tap-zones .left');
+  const rightZone = document.querySelector('.tap-zones .right');
+  const audio = document.getElementById('bgm');
+  const musicBtn = document.querySelector('.music-btn');
+  const startBtn = document.querySelector('.start-btn');
+  const indicator = document.querySelector('.page-indicator');
+
+  // Arrange z-index: first page on top
+  pages.forEach((p, i) => { p.style.zIndex = (pages.length - i).toString(); });
+
+  // Track flip count (how many pages turned)
+  let flips = 0;
+
+  function updateIndicator(){
+    const totalMain = pages.length - 1;
+    if (flips === 0) indicator.textContent = 'Cover';
+    else indicator.textContent = `Halaman ${flips}/${totalMain}`;
+  }
+  function turnNext() {
+    if (flips < pages.length - 1) {
+      const page = pages[flips];
+      page.classList.add('turning');
+      page.classList.add('flipped');
+      setTimeout(()=>{ page.classList.remove('turning'); }, 900);
+      flips++;
+      updateIndicator();
+    }
+  }
+  function turnPrev() {
+    if (flips > 0) {
+      const page = pages[flips-1];
+      page.classList.add('turning');
+      page.classList.remove('flipped');
+      setTimeout(()=>{ page.classList.remove('turning'); }, 900);
+      flips--;
+      updateIndicator();
+    }
+  }
+
+  // Tap zones
+  rightZone.addEventListener('click', turnNext);
+  leftZone.addEventListener('click', turnPrev);
+
+  // Swipe handling
+  let startX = 0, startY = 0, dragging = false;
+  function onStart(e){
+    const t = e.touches ? e.touches[0] : e; dragging = true; startX = t.clientX; startY = t.clientY;
+  }
+  function onEnd(e){
+    if(!dragging) return; dragging = false;
+    const t = e.changedTouches ? e.changedTouches[0] : e;
+    const dx = t.clientX - startX; const dy = t.clientY - startY;
+    if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
+      if (dx < 0) turnNext(); else turnPrev();
+    }
+  }
+  book.addEventListener('touchstart', onStart, {passive:true});
+  book.addEventListener('touchend', onEnd, {passive:true});
+  book.addEventListener('mousedown', onStart);
+  book.addEventListener('mouseup', onEnd);
+
+  // Music controls
+  function updateMusicBtn(){ musicBtn.classList.toggle('playing', !audio.paused); }
+  musicBtn.addEventListener('click', async () => {
+    try {
+      if (audio.paused) await audio.play(); else audio.pause();
+    } catch (e) { /* ignore */ }
+    updateMusicBtn();
+  });
+  // Try autoplay, unlock on first user gesture
+  (async () => {
+    try { await audio.play(); updateMusicBtn(); } catch(e) {
+      const unlock = async () => { try { await audio.play(); updateMusicBtn(); } catch(_){}; window.removeEventListener('pointerdown', unlock); };
+      window.addEventListener('pointerdown', unlock, { once: true });
+    }
+  })();
+
+  // Start button: play music and open book
+  if (startBtn) {
+    startBtn.addEventListener('click', async () => {
+      try { await audio.play(); } catch(e) {}
+      updateMusicBtn();
+      turnNext();
+    });
+  }
+
+  // Init indicator
+  updateIndicator();
+
+  // Accessibility: keyboard for desktop
+  window.addEventListener('keydown', (e)=>{
+    if (e.key === 'ArrowRight') turnNext();
+    if (e.key === 'ArrowLeft') turnPrev();
+  });
+</script>
+
+</body>
+</html>
